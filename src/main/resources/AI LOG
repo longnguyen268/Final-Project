@@ -1,0 +1,20 @@
+Prompt: Does this find path code work for my project that finds degrees of connection between
+        Barca players?  private static List<Player> reconstructPath(Player target) {
+                               List<Player> reversedPath = new ArrayList<>();
+                               Player current = target;
+                               // TODO: Follow the 'parent' chain from 'end' back to 'start'
+                               while(current != null){
+                                   reversedPath.add(current);  // and add each position to the 'path' list.
+                                   current = current.parent;
+                               }
+
+                               List<Player> path = new ArrayList<>();
+                               for(int i = reversedPath.size() -1 ; i >= 0; i--){
+                                   path.add(reversedPath.get(i));// Remember to reverse the list at the end!
+                               }
+                               return path;
+                           }
+Response: It doesn't because the parent relationship is not present in the Player class, so it is not a permanent property of a player.
+Solution found: Instead of storing the current in a parent, I stored it in a temporary HashMap. Also
+                I need to have 2 separate methods, one for finding the path and one for reconstructing
+                the path.

@@ -18,3 +18,12 @@ Response: It doesn't because the parent relationship is not present in the Playe
 Solution found: Instead of storing the current in a parent, I stored it in a temporary HashMap. Also
                 I need to have 2 separate methods, one for finding the path and one for reconstructing
                 the path.
+
+Prompt: What are some things I can do for my GUI? I have a similar project with this GUI:[inserted
+        GalacticGPS's GUI].
+Response: This works perfectly. You can have the circles or nodes as players and have lines or
+          edges connected between players who have played with each other.
+Solution found: I will mirror the lay out of Galactic GPS's GUI and make changes that fit my project.
+
+
+

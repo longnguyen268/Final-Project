@@ -129,4 +129,8 @@ public class BarcaGraph {
         }
         return path;
     }
+
+    public int getTotalPlayers() {
+        return adjacency.size();
+    }
 }

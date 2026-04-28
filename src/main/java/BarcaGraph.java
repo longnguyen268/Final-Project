@@ -133,4 +133,16 @@ public class BarcaGraph {
     public int getTotalPlayers() {
         return adjacency.size();
     }
+
+    public int getEdgeCount() {
+        int total = 0;
+        for (Set<Player> neighbors : adjacency.values()) {
+            total += neighbors.size();
+        }
+        return total / 2;
+    }
+
+    public int getPlayerCount() {
+        return adjacency.size();
+    }
 }

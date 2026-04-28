@@ -1,4 +1,5 @@
 import javafx.application.Application;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -19,8 +20,8 @@ public class BarcaGUI extends Application {
     private BarcaGraph graph;
     private Label statusLabel;
     private ListView<String> playerList;
-    private TextField searchBox1;
-    private TextField searchBox2;
+    private TextField player1field;
+    private TextField player2field;
     private Player startPlayer = null;
     private Player endPlayer = null;
     private TextArea resultArea;
@@ -37,21 +38,92 @@ public class BarcaGUI extends Application {
 
         // Setup Toolbar
         HBox toolbar = new HBox(10);
-        toolbar.setStyle("-fx-padding: 10px; -fx-background-color: #333;");
-        Button btnGen = new Button("Generate Universe");
-        Button btnClear = new Button("Clear Path");
-        Button btnDegreeDistribution = new Button("Degree Distribution");
+        toolbar.setStyle("-fx-padding: 10px; -fx-background-color: #003366;");
+        toolbar.setAlignment(Pos.CENTER_LEFT);
 
-        btnGen.setOnAction(e -> generateAndDraw());
+        Button btnLoadPlayers = new Button("Load Players");
+        Button btnClear = new Button("Clear");
+
+        String buttonStyle = "-fx-background-color: #edbb00; -fx-text-fill: #004d98; -fx-font-weight: bold; -fx-cursor: hand; -fx-font-size: 14px;";
+        btnLoadPlayers.setStyle(buttonStyle);
+        btnClear.setStyle(buttonStyle);
+
+        btnLoadPlayers.setOnAction(e -> loadData());
         btnClear.setOnAction(e -> {
-            startNode = null; endNode = null;
+            startPlayer = null;
+            endPlayer = null;
+            player1field.clear();
+            player2field.clear();
+            resultArea.clear();
             drawGraph();
+            statusLabel.setText("Cleared. Click 'Load Players' to reload data.");
         });
-        btnDegreeDistribution.setOnAction(e -> degreeDistribution());
-        toolbar.getChildren().addAll(btnGen, btnClear, btnDegreeDistribution);
+
+        toolbar.getChildren().addAll(btnLoadPlayers, btnClear);
+
+        //Setup left panel for controls
+        VBox leftPanel = new VBox(10);
+        leftPanel.setStyle("-fx-padding: 15px; -fx-background-color: #003366;");
+        leftPanel.setPrefWidth(320);
+
+        // Title
+        Label title = new Label("FC Barcelona Network");
+        title.setStyle("-fx-text-fill: #edbb00; -fx-font-size: 20px; -fx-font-weight: bold;");
+
+        // Player list
+        Label listLabel = new Label("All Players:");
+        listLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+
+        playerList = new ListView<>();
+        playerList.setPrefHeight(200);
+        playerList.setStyle("-fx-control-inner-background: #002b5c; -fx-text-fill: white;");
+        playerList.setOnMouseClicked(e -> {
+            String selected = playerList.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                statusLabel.setText("Selected: " + selected);
+            }
+        });
+
+        Separator separator1 = new Separator();
+        separator1.setStyle("-fx-background-color: #edbb00;");
+
+        // Degrees of separation section
+        Label degreesTitle = new Label("Degrees of Separation");
+        degreesTitle.setStyle("-fx-text-fill: #edbb00; -fx-font-size: 16px; -fx-font-weight: bold;");
+
+        player1field = new TextField();
+        player1field.setPromptText("Enter Player 1 (e.g., Lionel Messi)");
+        player1field.setStyle("-fx-prompt-text-fill: #888;");
+
+        player2field = new TextField();
+        player2field.setPromptText("Enter Player 2 (e.g., Pedri Gonzalez)");
+        player2field.setStyle("-fx-prompt-text-fill: #888;");
+
+        Button btnFind = new Button("Find Degrees of Separation");
+        btnFind.setStyle("-fx-background-color: #edbb00; -fx-text-fill: #004d98; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand;");
+        btnFind.setOnAction(e -> findDegrees());
+
+        Separator separator2 = new Separator();
+        separator2.setStyle("-fx-background-color: #edbb00;");
+
+        // Results area
+        Label resultsLabel = new Label("Results:");
+        resultsLabel.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+
+        resultArea = new TextArea();
+        resultArea.setEditable(false);
+        resultArea.setPrefHeight(180);
+        resultArea.setStyle("-fx-control-inner-background: #002b5c; -fx-text-fill: #edbb00; -fx-font-family: monospace;");
+        resultArea.setWrapText(true);
+
+        leftPanel.getChildren().addAll(
+                title, listLabel, playerList, separator1,
+                degreesTitle, player1field, player2field, btnFind, separator2,
+                resultsLabel, resultArea
+        );
 
         // Setup Canvas
-        spacePane = new Pane();
+        graphPane = new Pane();
         statusLabel = new Label("Click 'Generate Universe'. If screen stays black, Graph.java is empty!");
         statusLabel.setStyle("-fx-text-fill: white; -fx-padding: 10px;");
 
@@ -65,16 +137,8 @@ public class BarcaGUI extends Application {
         stage.show();
     }
 
-    private void generateAndDraw() {
-        // This calls the Generator (which currently returns Earth/Mars)
-        universe = UniverseGenerator.generate(1000, 650);
-        startNode = null;
-        endNode = null;
-        drawGraph();
-    }
-
     private void drawGraph() {
-        spacePane.getChildren().clear();
+        graphPane.getChildren().clear();
 
         if (universe == null || universe.getVertices().isEmpty()) {
             statusLabel.setText("Error: Universe is empty. Did Student A implement Graph.addVertex?");

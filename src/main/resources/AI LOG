@@ -25,5 +25,15 @@ Response: This works perfectly. You can have the circles or nodes as players and
           edges connected between players who have played with each other.
 Solution found: I will mirror the lay out of Galactic GPS's GUI and make changes that fit my project.
 
+Prompt: How would I set up my tool box?
+Response: Normally, there would be functions that are essential to your program. A clear button
+          and load players would be appropriate.
+Solution found: I will set up my tool box with buttons that once clicked will load players and clear
+                the graph displayed.
+
+Prompt: How do I set up my left panel?
+Response: Follow the similar pattern of your old GalacticGPS project. Add a button to find degrees
+            and text field to find players' connections.
+Solution found: It showed me how I would do it.
 
 

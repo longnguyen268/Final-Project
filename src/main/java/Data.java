@@ -3,15 +3,15 @@ import java.util.*;
 public class Data {
     public static void loadData(BarcaGraph graph){
         String[][] studs = {
-                {"Lionel Messi", "FWD"}, {"Xavi Hernandez", "MID"}, {"Andres Iniesta", "MID"},
-                {"Carles Puyol", "DEF"}, {"Gerard Pique", "DEF"}, {"Sergio Busquets", "MID"},
-                {"Jordi Alba", "DEF"}, {"Pedri Gonzalez", "MID"}, {"Gavi Paez", "MID"},
-                {"Ronaldinho", "FWD"}, {"Samuel Eto'o", "FWD"}, {"Johan Cruyff", "FWD"},
-                {"Rivaldo", "FWD"}, {"Ronaldo Nazario", "FWD"}, {"Neymar Jr", "FWD"}
+                {"Lionel Messi"}, {"Xavi Hernandez"}, {"Andres Iniesta"},
+                {"Carles Puyol"}, {"Gerard Pique"}, {"Sergio Busquets"},
+                {"Jordi Alba"}, {"Pedri Gonzalez"}, {"Gavi Paez"},
+                {"Ronaldinho"}, {"Samuel Eto'o"}, {"Johan Cruyff"},
+                {"Rivaldo"}, {"Ronaldo Nazario"}, {"Neymar Jr"}
         };
 
         for (String[] stud : studs) {
-            graph.addPlayer(stud[0], stud[1]);
+            graph.addPlayer(stud[0]);
         }
 
         String[][] connections = {

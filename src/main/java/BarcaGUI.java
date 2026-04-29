@@ -264,11 +264,12 @@ public class BarcaGUI extends Application {
         }
 
         // 2. Draw Nodes (Players)
-        // TODO: Loop through every planet again.
-        // TODO: Create a Circle(p.x, p.y, 10)
         for (Player eachPlayer : players) {
             double[] pos = playerPositions.get(eachPlayer);
-            if (pos == null) continue;
+            if (pos == null)
+            {
+                continue;
+            }
 
             // Circle
             Circle circle = new Circle(pos[0], pos[1], 12);
@@ -305,15 +306,24 @@ public class BarcaGUI extends Application {
         Set<String> drawnEdges = new HashSet<>();
         for (Player p1 : graph.adjacency.keySet()) {
             double[] pos1 = playerPositions.get(p1);
-            if (pos1 == null) continue;
+            if (pos1 == null)
+            {
+                continue;
+            }
 
             for (Player p2 : graph.adjacency.get(p1)) {
                 String edgeKey = Math.min(p1.getId(), p2.getId()) + "-" + Math.max(p1.getId(), p2.getId());
-                if (drawnEdges.contains(edgeKey)) continue;
+                if (drawnEdges.contains(edgeKey))
+                {
+                    continue;
+                }
                 drawnEdges.add(edgeKey);
 
                 double[] pos2 = playerPositions.get(p2);
-                if (pos2 == null) continue;
+                if (pos2 == null)
+                {
+                    continue;
+                }
 
                 Line line = new Line(pos1[0], pos1[1], pos2[0], pos2[1]);
                 line.setStroke(Color.GRAY);

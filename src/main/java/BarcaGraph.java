@@ -13,14 +13,14 @@ public class BarcaGraph {
         this.nextId = 1;
     }
 
-    public Player addPlayer(String name, String position) {
+    public Player addPlayer(String name) {
         // Check if player already exists
         if (nameHash.containsKey(name)) {
             return nameHash.get(name);
         }
 
         // Create new player
-        Player player = new Player(nextId++, name, position);
+        Player player = new Player(nextId++, name);
 
         // Add to HashMaps
         nameHash.put(name, player);
@@ -125,7 +125,7 @@ public class BarcaGraph {
 
         List<Player> path = new ArrayList<>();
         for(int i = reversedPath.size() -1 ; i >= 0; i--){
-            path.add(reversedPath.get(i));// Remember to reverse the list at the end!
+            path.add(reversedPath.get(i));//reverse
         }
         return path;
     }

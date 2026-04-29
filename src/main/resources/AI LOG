@@ -31,9 +31,12 @@ Response: Normally, there would be functions that are essential to your program.
 Solution found: I will set up my tool box with buttons that once clicked will load players and clear
                 the graph displayed.
 
-Prompt: How do I set up my left panel?
+Prompt: How do I set up left panel with controls? I am thinking list all the players with some kind
+        kind of List View to show player list. And it also shows the degrees of separation.
 Response: Follow the similar pattern of your old GalacticGPS project. Add a button to find degrees
             and text field to find players' connections.
-Solution found: It showed me how I would do it.
+Solution found: I implemented a findDegrees() method into the GUI that showed the degrees connection.
+                between 2 players. I also incorporated a Separator to show distinct functions in
+                my left panel.
 
 

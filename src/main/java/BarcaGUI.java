@@ -5,14 +5,10 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.*;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
-import javafx.scene.chart.BarChart;
-import javafx.scene.chart.XYChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.CategoryAxis;
+import java.util.*;
+
 
 public class BarcaGUI extends Application {
 
@@ -27,7 +23,6 @@ public class BarcaGUI extends Application {
     private TextArea resultArea;
 
     private Map<Player, double[]> playerPositions = new HashMap<>();
-    private Map<Player, List<Line>> playerEdges = new HashMap<>();
 
     @Override
     public void start(Stage stage) {
@@ -48,7 +43,16 @@ public class BarcaGUI extends Application {
         btnLoadPlayers.setStyle(buttonStyle);
         btnClear.setStyle(buttonStyle);
 
-        btnLoadPlayers.setOnAction(e -> loadData());
+        btnLoadPlayers.setOnAction(e -> {
+                graph = new BarcaGraph();
+                Data.loadData(graph);
+                updatePlayerList();
+                drawGraph();
+                statusLabel.setText("Loaded " + graph.getPlayerCount() + " Barca legends with " +
+                    graph.getEdgeCount() + " connections");
+                resultArea.setText("Ready! Enter two player names to find degrees of separation.");
+        });
+
         btnClear.setOnAction(e -> {
             startPlayer = null;
             endPlayer = null;
@@ -121,163 +125,202 @@ public class BarcaGUI extends Application {
                 degreesTitle, player1field, player2field, btnFind, separator2,
                 resultsLabel, resultArea
         );
-
         // Setup Canvas
         graphPane = new Pane();
-        statusLabel = new Label("Click 'Generate Universe'. If screen stays black, Graph.java is empty!");
-        statusLabel.setStyle("-fx-text-fill: white; -fx-padding: 10px;");
+        graphPane.setStyle("-fx-background-color: #002b5c;");
+        graphPane.setMinSize(800, 600);
+        statusLabel = new Label("Click 'Load Players'.");
+        statusLabel.setStyle("-fx-text-fill: #edbb00; -fx-padding: 10px; -fx-background-color: #003366;");
 
-        root.setCenter(spacePane);
+        root.setCenter(graphPane);
         root.setTop(toolbar);
         root.setBottom(statusLabel);
+        root.setLeft(leftPanel);
 
-        Scene scene = new Scene(root, 1000, 700);
-        stage.setTitle("Galactic Graph");
+        Scene scene = new Scene(root, 1200, 700);
+        stage.setTitle("Barca Graph");
         stage.setScene(scene);
         stage.show();
     }
 
+    private void findDegrees() {
+        String p1Name = player1field.getText().trim();
+        String p2Name = player2field.getText().trim();
+
+        if (p1Name.isEmpty() || p2Name.isEmpty()) {
+            statusLabel.setText("Enter both player names");
+            resultArea.setText("Error: Please enter both player names.");
+            return;
+        }
+
+        // Check if players exist
+        if (!graph.nameHash.containsKey(p1Name)) {
+            statusLabel.setText("Player not found: " + p1Name);
+            resultArea.setText("Error: Player '" + p1Name + "' not found in the database.");
+            return;
+        }
+
+        if (!graph.nameHash.containsKey(p2Name)) {
+            statusLabel.setText("Player not found: " + p2Name);
+            resultArea.setText("Error: Player '" + p2Name + "' not found in the database.");
+            return;
+        }
+
+        // Calculate degrees
+        int degrees = graph.degreesOfConnection(p1Name, p2Name);
+        List<Player> path = graph.findPath(p1Name, p2Name);
+
+        // Build result text
+        StringBuilder result = new StringBuilder();
+        result.append("DEGREES OF SEPARATION\n");
+        result.append("═".repeat(33)).append("\n\n");
+        result.append("From ").append(p1Name).append("\n");
+        result.append("to ").append(p2Name).append("\n\n");
+
+        if (degrees == -1) {
+            result.append("NO CONNECTION FOUND!\n\n");
+            result.append("These players are not connected through any chain of teammates.\n");
+            result.append("They may have played in different eras with no overlap.\n");
+            statusLabel.setText("No connection found between " + p1Name + " and " + p2Name);
+        } else {
+            result.append("Results found: ").append(degrees).append(" DEGREE(S) OF SEPARATION\n\n");
+            result.append("PATH:\n");
+            for (int i = 0; i < path.size(); i++) {
+                result.append("   ").append(i + 1).append(". ").append(path.get(i).getName());
+                if (i < path.size() - 1) {
+                    result.append("\n      ↓\n");
+                }
+            }
+            result.append("\n");
+            statusLabel.setText(degrees + " degree(s) between " + p1Name + " and " + p2Name);
+
+            // Highlight the path in the graph
+            drawPath(path);
+        }
+
+        resultArea.setText(result.toString());
+    }
+
+    private void updatePlayerList() {
+        if (playerList != null && graph != null) {
+            playerList.getItems().clear();
+            List<String> names = new ArrayList<>(graph.nameHash.keySet());
+            Collections.sort(names);
+            playerList.getItems().addAll(names);
+        }
+    }
+
+    private void drawPath(List<Player> path) {
+       if (path == null || path.size() <2){
+           return;
+       }
+       for (int i = 0; i < path.size()-1; i++) {
+           Player p1 = path.get(i);
+           Player p2 = path.get(i + 1);
+
+           double[] pos1 = playerPositions.get(p1);
+           double[] pos2 = playerPositions.get(p2);
+
+           if (pos1 != null && pos2 != null) {
+               Line highlightLine = new Line(pos1[0], pos1[1], pos2[0], pos2[1]);
+               highlightLine.setStroke(Color.DARKRED);
+               highlightLine.setStrokeWidth(5);
+               graphPane.getChildren().add(highlightLine);
+           }
+       }
+    }
+
     private void drawGraph() {
         graphPane.getChildren().clear();
+        playerPositions.clear();
 
-        if (universe == null || universe.getVertices().isEmpty()) {
-            statusLabel.setText("Error: Universe is empty. Did Student A implement Graph.addVertex?");
+        if (graph == null || graph.adjacency.isEmpty()) {
+            statusLabel.setText("No data loaded. Click 'Load Players' to begin");
             return;
         }
 
-        // --- STUDENT B TASK: DRAW THE GRAPH ---
+        double width = graphPane.getWidth();
+        double height = graphPane.getHeight();
 
-        // 1. Draw Edges (Lines)
-        // TODO: Loop through every planet in universe.getVertices()
-        // TODO: Loop through every neighbor in universe.getNeighbors(planet)
-        // TODO: Create a new Line(p.x, p.y, neighbor.x, neighbor.y)
-        // TODO: spacePane.getChildren().add(line);
-        for (Planet eachPlanet : universe.getVertices()) {
-            for (Edge<Planet> thisEdge : universe.getNeighbors(eachPlanet)) {
-                Line line = new Line();
-                line.startXProperty().bind(eachPlanet.xProperty());
-                line.startYProperty().bind(eachPlanet.yProperty());
-                line.endXProperty().bind(thisEdge.destination.xProperty());
-                line.endYProperty().bind(thisEdge.destination.yProperty());
-                line.setStroke(Color.WHITE);
-                spacePane.getChildren().add(line);
-            }
+        if(width <= 0){
+            width = 800;
         }
 
-        // 2. Draw Nodes (Planets)
+        if(height <= 0){
+            height = 600;
+        }
+
+        List<Player> players = new ArrayList<>(graph.adjacency.keySet());
+        int centerX = (int)(width / 2);
+        int centerY = (int)(height / 2);
+        int radius = (int)(Math.min(width, height) / 2.5);
+
+        for (int i = 0; i < players.size(); i++) {
+            Player player = players.get(i);
+            double angle = 2 * Math.PI * i / players.size();
+            double x = centerX + radius * Math.cos(angle);
+            double y = centerY + radius * Math.sin(angle);
+            playerPositions.put(player, new double[]{x, y});
+        }
+
+        // 2. Draw Nodes (Players)
         // TODO: Loop through every planet again.
         // TODO: Create a Circle(p.x, p.y, 10)
-        // TODO: Set color Color.CYAN
-        // TODO: spacePane.getChildren().add(circle);
-        for (Planet eachPlanet : universe.getVertices()) {
-            Circle circle = new Circle();
-            circle.setRadius(8);
+        for (Player eachPlayer : players) {
+            double[] pos = playerPositions.get(eachPlayer);
+            if (pos == null) continue;
+
+            // Circle
+            Circle circle = new Circle(pos[0], pos[1], 12);
             circle.setFill(Color.GOLD);
-            circle.centerXProperty().bindBidirectional(eachPlanet.xProperty());
-            circle.centerYProperty().bindBidirectional(eachPlanet.yProperty());
-            circle.setOnMouseClicked(e -> handlePlanetClick(eachPlanet));
-            circle.setOnMouseDragged(e -> {
-                circle.setCenterX(e.getX());
-                circle.setCenterY(e.getY());
+            circle.setStroke(Color.DARKGOLDENROD);
+            circle.setStrokeWidth(2);
+
+            // Click handler
+            final Player finalPlayer = eachPlayer;
+            circle.setOnMouseClicked(e -> {
+                if (player1field.getText().isEmpty()) {
+                    player1field.setText(finalPlayer.getName());
+                    statusLabel.setText("Player 1 set to: " + finalPlayer.getName());
+                } else if (player2field.getText().isEmpty()) {
+                    player2field.setText(finalPlayer.getName());
+                    statusLabel.setText("Player 2 set to: " + finalPlayer.getName());
+                } else {
+                    player1field.clear();
+                    player2field.clear();
+                    player1field.setText(finalPlayer.getName());
+                    statusLabel.setText("Fields cleared. Player 1 set to: " + finalPlayer.getName());
+                }
             });
-            spacePane.getChildren().add(circle);
-            planetCircles.put(eachPlanet, circle);
+
+            //Player name label
+            Text label = new Text(pos[0] - 15, pos[1] - 15, eachPlayer.getName());
+            label.setFill(Color.WHITE);
+            label.setStyle("-fx-font-size: 10px; -fx-font-weight: bold;");
+
+            graphPane.getChildren().addAll(circle, label);
         }
 
-        // 3. Add Click Events
-    }
+        // 3. draw edges
+        Set<String> drawnEdges = new HashSet<>();
+        for (Player p1 : graph.adjacency.keySet()) {
+            double[] pos1 = playerPositions.get(p1);
+            if (pos1 == null) continue;
 
-    private void handlePlanetClick(Planet p) {
-        if (startNode == null) {
-            startNode = p;
-            statusLabel.setText("Start: " + p.getName());
-        } else if (endNode == null && p != startNode) {
-            endNode = p;
-            statusLabel.setText("Calculating path...");
-            drawPath();
-        }
-    }
+            for (Player p2 : graph.adjacency.get(p1)) {
+                String edgeKey = Math.min(p1.getId(), p2.getId()) + "-" + Math.max(p1.getId(), p2.getId());
+                if (drawnEdges.contains(edgeKey)) continue;
+                drawnEdges.add(edgeKey);
 
-    private void drawPath() {
-        List<Planet> path = Pathfinder.findShortestPath(universe, startNode, endNode);
+                double[] pos2 = playerPositions.get(p2);
+                if (pos2 == null) continue;
 
-        // --- STUDENT B TASK: DRAW THE PATH ---
-        // TODO: Loop through the 'path' list.
-        // TODO: Draw a thick GOLD line connecting the planets.
-        for (int i = 0; i < path.size(); i ++) {
-            Line eachLine = new Line();
-            eachLine.startXProperty().bind(path.get(i).previous.xProperty());
-            eachLine.startYProperty().bind(path.get(i).previous.yProperty());
-            eachLine.endXProperty().bind(path.get(i).xProperty());
-            eachLine.endYProperty().bind(path.get(i).yProperty());
-            if (Math.hypot(path.get(i).previous.getX() - path.get(i).getX(), path.get(i).previous.getY() - path.get(i).getY()) > 200) {
-                eachLine.setStrokeWidth(5);
-                eachLine.setStroke(Color.RED);
+                Line line = new Line(pos1[0], pos1[1], pos2[0], pos2[1]);
+                line.setStroke(Color.GRAY);
+                line.setStrokeWidth(1.5);
+                graphPane.getChildren().add(line);
             }
-            else if (Math.hypot(path.get(i).previous.getX() - path.get(i).getX(), path.get(i).previous.getY() - path.get(i).getY()) < 150) {
-                eachLine.setStrokeWidth(10);
-                eachLine.setStroke(Color.GREEN);
-            }
-            else {
-                eachLine.setStrokeWidth(7);
-                eachLine.setStroke(Color.WHITE);
-            }
-            spacePane.getChildren().add(eachLine);
         }
-
-        if (path.isEmpty()) {
-            statusLabel.setText("No path found.");
-        } else {
-            statusLabel.setText("Path found! Steps: " + path.size());
-        }
-    }
-
-    private void degreeDistribution(){
-        if(universe == null){
-            statusLabel.setText("Generate a universe first.");
-            return;
-        }
-
-        System.out.println("Degree distribution");
-
-        Map<Integer, Integer> degreeCount = new HashMap<>();
-
-        for(Planet planet: universe.getVertices()){
-            int degree = universe.getNeighbors(planet).size();
-            degreeCount.put(degree, degreeCount.getOrDefault(degree, 0) + 1);
-            //we used getOrDefault(degree, 0) instead of get(degree) in case of that planet being
-            //the first planet to have that many degrees instead of it returning null.
-            System.out.println(planet.getName() +" has "+degree+" connections.");
-        }
-
-        if(degreeCount.isEmpty()){
-            System.out.println("degree count is empty");
-            return;
-        }
-
-        Stage chartStage = new Stage();
-        chartStage.setTitle("Degree Distribution");
-
-        CategoryAxis xAxis = new CategoryAxis();
-        NumberAxis yAxis = new NumberAxis();
-        xAxis.setLabel("Number of degrees");
-        yAxis.setLabel("Number of planets");
-
-        BarChart<String, Number> barChart = new BarChart<>(xAxis, yAxis);
-        barChart.setTitle("Degree Distribution");
-
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.setName("Planets");
-
-        for(Map.Entry<Integer, Integer> entry : degreeCount.entrySet()){
-            series.getData().add(new XYChart.Data<>(String.valueOf(entry.getKey()), entry.getValue()));
-        }
-
-        barChart.getData().add(series);
-
-        Scene scene = new Scene(barChart, 600, 400);
-        chartStage.setScene(scene);
-        chartStage.show();
     }
 
     public static void main(String[] args) {
